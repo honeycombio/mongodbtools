@@ -1,0 +1,44 @@
+# mongodbtools
+
+## Summary
+
+Two packages.  One for ingesting mongodb logs (logparser) and the other for query normalization (queryshape).
+
+## Thanks
+
+The logparser package is spiritually derived from Travis Cline's PEG
+parser over at https://github.com/tmc/mongologtools.  While the parser
+code itself is obviously different (this parser is hand-coded),
+there are api similarities, and Travis's parser was definitely helpful
+when figuring out just what the heck the logs were supposed to look like.
+
+His license is replicated here:
+
+```
+Copyright (c) 2015, Travis Cline <travis.cline@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+Another debt of gratitude goes out to Thomas Rückstieß and his
+_awesome_ mongodb log spec at
+https://github.com/rueckstiess/mongodb-log-spec.  In particular the
+queryshape package attempts (and fails in some cases) to match up with his spec.
+
+## Contributions
+
+Features, bug fixes and other changes to mongodbtools are gladly accepted. Please
+open issues or a pull request with your change. Remember to add your name to the
+CONTRIBUTORS file!
+
+All contributions will be released under the Apache License 2.0.
