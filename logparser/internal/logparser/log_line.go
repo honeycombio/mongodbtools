@@ -89,9 +89,9 @@ func (p *LogLineParser) Parse() error {
 	}
 
 	if q, ok := p.Fields["query"].(map[string]interface{}); ok {
-		if _, ok = p.Fields["query_shape"]; !ok {
+		if _, ok = p.Fields["normalized_query"]; !ok {
 			// also calculate the query_shape if we can
-			p.Fields["query_shape"] = queryshape.GetQueryShape(q)
+			p.Fields["normalized_query"] = queryshape.GetQueryShape(q)
 		}
 	}
 
