@@ -95,6 +95,27 @@ func (p *LogLineParser) Parse() error {
 		}
 	}
 
+	// determine if this log line represents a read or write
+	// operation.  not "operation" in the sense of the "operation"
+	// field, but in the data direction.
+	readOrWrite := ""
+	if operation, ok := p.Fields["operation"].(string); ok {
+		if operation == "query" {
+			readOrWrite = "read"
+		} else if operation == "insert" {
+			readOrWrite = "write"
+		} else if operation == "command" {
+			if commandType, ok := p.Fields["command_type"].(string); ok {
+				if commandType == "insert" || commandType == "update" || commandType == "delete" {
+					readOrWrite = "write"
+				} else if commandType == "findAndModify" {
+					readOrWrite = "read-write"
+				}
+			}
+		}
+	}
+	p.Fields["read_or_write"] = readOrWrite
+
 	if err != nil {
 		return partialLogLineError{InnerError: err}
 	}
