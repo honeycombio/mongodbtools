@@ -40,17 +40,19 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		now := time.Now()
-		_, err := logparser.ParseLogLine(line)
+		values, err := logparser.ParseLogLine(line)
 
 		logparserTime += time.Since(now)
 
 		if err != nil {
 			logparserFailure++
+			fmt.Println("FAIL:", line, err.Error())
 		} else {
 			logparserSuccess++
+			fmt.Println("SUCCESS:", values)
 		}
 
-		if logparserSuccess > 0 && logparserSuccess % 50000 == 0 {
+		if logparserSuccess > 0 && logparserSuccess%50000 == 0 {
 			fmt.Printf("%dms for %d successfully log lines (%d lines/sec).  %d failures\n", logparserTime.Nanoseconds()/1e6, logparserSuccess, int64(float64(logparserSuccess)/logparserTime.Seconds()), logparserFailure)
 		}
 	}
