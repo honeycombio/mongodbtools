@@ -235,12 +235,12 @@ func (p *LogLineParser) parseFieldAndValue() (bool, error) {
 	p.eatWS()
 
 	savedPosition := p.position
-	if fieldName, err = p.readUntilRune(':'); err != nil {
+	if fieldName, err = p.readWhileNot([]interface{}{':', unicode.Space}); err != nil {
 		p.position = savedPosition
 		return true, nil // swallow the error to give our caller a change to backtrack
 	}
-	p.advance() // skip the ':'
-	p.eatWS()
+	p.advance() // skip the ':'/WS
+	p.eatWS()   // end eat any remaining WS
 
 	// some known fields have a more complicated structure
 	if fieldName == "planSummary" {
@@ -263,6 +263,12 @@ func (p *LogLineParser) parseFieldAndValue() (bool, error) {
 		if fieldValue, err = p.parseJSONMap(); err != nil {
 			return false, err
 		}
+	} else if fieldName == "locks(micros)" {
+		// < 2.8
+		if fieldValue, err = p.parseLocksMicro(); err != nil {
+			return false, err
+		}
+		p.eatWS()
 	} else {
 		if fieldValue, err = p.parseFieldValue(fieldName); err != nil {
 			return false, err
@@ -298,6 +304,31 @@ func (p *LogLineParser) parseFieldValue(fieldName string) (interface{}, error) {
 		return nil, errors.New(fmt.Sprintf("unexpected start character for value of field '%s'", fieldName))
 	}
 	return fieldValue, nil
+}
+
+func (p *LogLineParser) parseLocksMicro() (map[string]int64, error) {
+	rv := make(map[string]int64)
+
+	for {
+		c := p.eatWS().lookahead(0)
+		if c != 'r' && c != 'R' && c != 'w' && c != 'W' {
+			return rv, nil
+		} else if p.lookahead(1) != ':' {
+			return rv, nil
+		}
+
+		p.advance()
+		p.advance()
+
+		// not strictly correct - the value here should be an integer, not a float
+		var duration float64
+		var err error
+		if duration, err = p.readNumber(); err != nil {
+			return nil, err
+		}
+		rv[string([]rune{c})] = int64(duration)
+	}
+
 }
 
 func (p *LogLineParser) parsePlanSummary() (interface{}, error) {
@@ -670,11 +701,19 @@ func (p *LogLineParser) readUntilEOL() (string, error) {
 }
 
 func (p *LogLineParser) readWhile(checks []interface{}) (string, error) {
+	return p._readWhile(checks, false)
+}
+
+func (p *LogLineParser) readWhileNot(checks []interface{}) (string, error) {
+	return p._readWhile(checks, true)
+}
+
+func (p *LogLineParser) _readWhile(checks []interface{}, checkStopVal bool) (string, error) {
 	startPosition := p.position
 	endPosition := startPosition
 
 	for p.runes[endPosition] != endRune {
-		if !check(p.runes[endPosition], checks) {
+		if check(p.runes[endPosition], checks) == checkStopVal {
 			break
 		}
 		endPosition++
