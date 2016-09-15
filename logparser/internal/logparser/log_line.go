@@ -286,6 +286,10 @@ func (p *LogLineParser) parseFieldValue(fieldName string) (interface{}, error) {
 		if fieldValue, err = p.readNumber(); err != nil {
 			return nil, err
 		}
+	case unicode.IsLetter(firstCharInVal):
+		if fieldValue, err = p.readJSONIdentifier(); err != nil {
+			return nil, err
+		}
 	case firstCharInVal == '"':
 		if fieldValue, err = p.readStringValue(firstCharInVal); err != nil {
 			return nil, err
