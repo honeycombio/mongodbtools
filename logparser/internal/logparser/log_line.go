@@ -520,37 +520,35 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 			return nil, err
 		}
 	case firstCharInVal == '"':
-		if p.lookahead(1) != '{' {
-			if value, err = p.readStringValue(firstCharInVal); err != nil {
-				return nil, err
-			}
-		} else {
-			// ugh.  mongodb seems to put partial misquoted json blobs in as strings.  e.g. something like:
-			//   payload: "{"alert":"something went wrong","id":"12345","type":"...",<space>
-			// so we do an equally terrible thing and notice the "{... prefix, ignore the leading ", and
-			// keep track of quote nested, reading until we hit ,<space> in an unquoted context.
+		// mongo doesn't follow generally accepted rules on how to handle nested quotes
+		// when the inner quote character matches the outer quote character (escaping the inner
+		// quote with a \).
 
-			p.position++
-			endPosition := p.position
-			quoted := false
-			for {
-				if !quoted && p.matchAhead(endPosition, "\", ") {
-					endPosition = endPosition + 1 // we want to end on the ','
-					break
-				} else if quoted && p.matchAhead(endPosition, "...\", ") {
-					endPosition = endPosition + 4 // we want to end on the ','
-					break
-				} else if p.runes[endPosition] == '"' {
-					quoted = !quoted
-				}
+		// so we have to do something equally terrible to read these values.  we look ahead until we
+		// find a value separator or an end to a json value - , ] }
+		// that occurs after an even number of quotes.
 
-				endPosition++
-				if p.runes[endPosition] == endRune {
-					return nil, errors.New("unexpected end of line reading json value")
+		savedPosition := p.position + 1
+		endPosition := p.position + 2
+
+		quoteCount := 1
+		quotePosition := savedPosition - 1
+
+		for p.runes[endPosition] != endRune {
+			r := p.runes[endPosition]
+			if r == '"' {
+				quoteCount++
+				quotePosition = endPosition
+			} else if r == ',' || r == '}' || r == ']' {
+				if quoteCount%2 == 0 {
+					value = string(p.runes[savedPosition:quotePosition])
+					p.position = quotePosition + 1
+					break
 				}
+			} else if p.runes[endPosition] == endRune {
+				return nil, errors.New("unexpected end of line reading json value")
 			}
-			value = string(p.runes[p.position:endPosition])
-			p.position = endPosition
+			endPosition++
 		}
 	case unicode.IsLetter(firstCharInVal):
 		if value, err = p.readJSONIdentifier(); err != nil {
