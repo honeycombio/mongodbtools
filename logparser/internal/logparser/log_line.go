@@ -301,7 +301,7 @@ func (p *LogLineParser) parseFieldValue(fieldName string) (interface{}, error) {
 			return nil, err
 		}
 	default:
-		return nil, errors.New(fmt.Sprintf("unexpected start character for value of field '%s'", fieldName))
+		return nil, fmt.Errorf("unexpected start character for value of field '%s'", fieldName)
 	}
 	return fieldValue, nil
 }
@@ -534,21 +534,24 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 		quoteCount := 1
 		quotePosition := savedPosition - 1
 
-		for p.runes[endPosition] != endRune {
-			r := p.runes[endPosition]
-			if r == '"' {
-				quoteCount++
-				quotePosition = endPosition
-			} else if r == ',' || r == '}' || r == ']' {
-				if quoteCount%2 == 0 {
-					value = string(p.runes[savedPosition:quotePosition])
-					p.position = quotePosition + 1
-					break
+		if endPosition < len(p.runes)-1 {
+			for {
+				r := p.runes[endPosition]
+				if r == '"' {
+					quoteCount++
+					quotePosition = endPosition
+				} else if r == ',' || r == '}' || r == ']' {
+					if quoteCount%2 == 0 {
+						value = string(p.runes[savedPosition:quotePosition])
+						p.position = quotePosition + 1
+						break
+					}
 				}
-			} else if p.runes[endPosition] == endRune {
-				return nil, errors.New("unexpected end of line reading json value")
+				endPosition++
+				if endPosition == len(p.runes) {
+					return nil, errors.New("unexpected end of line reading json value")
+				}
 			}
-			endPosition++
 		}
 	case unicode.IsLetter(firstCharInVal):
 		if value, err = p.readJSONIdentifier(); err != nil {
@@ -565,7 +568,7 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 				return nil, err
 			}
 			if value != "Date" {
-				return nil, errors.New(fmt.Sprintf("unexpected constructor: %s", value))
+				return nil, fmt.Errorf("unexpected constructor: %s", value)
 			}
 			// we expect "new Date(123456789)"
 			if err = p.expect('('); err != nil {
@@ -580,7 +583,7 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 			}
 
 			if math.Floor(dateNum) != dateNum {
-				return nil, errors.New(fmt.Sprintf("expected int in `new Date()`"))
+				return nil, errors.New("expected int in `new Date()`")
 			}
 			unixSec := int64(dateNum) / 1000
 			unixNS := int64(dateNum) % 1000 * 1000000
@@ -620,10 +623,10 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 			}
 			value = "ObjectId(" + hex + ")"
 		} else {
-			return nil, errors.New(fmt.Sprintf("unexpected start of JSON value: %s", value))
+			return nil, fmt.Errorf("unexpected start of JSON value: %s", value)
 		}
 	default:
-		return nil, errors.New(fmt.Sprintf("unexpected start character for JSON value of field: %c", firstCharInVal))
+		return nil, fmt.Errorf("unexpected start character for JSON value of field: %c", firstCharInVal)
 	}
 
 	return value, nil
@@ -686,7 +689,7 @@ func (p *LogLineParser) readUntilRune(untilRune rune) (string, error) {
 	}
 
 	if p.runes[endPosition] == endRune && untilRune != endRune {
-		return "", errors.New(fmt.Sprintf("found end of line before expected rune '%c'", untilRune))
+		return "", fmt.Errorf("found end of line before expected rune '%c'", untilRune)
 	}
 
 	p.position = endPosition
@@ -750,7 +753,7 @@ func (p *LogLineParser) expect(c interface{}) error {
 	r := p.advance()
 	matches := doCheck(r, c)
 	if !matches {
-		return errors.New(fmt.Sprintf("unexpected '%c'", r))
+		return fmt.Errorf("unexpected '%c'", r)
 	}
 	return nil
 }
@@ -775,7 +778,7 @@ func severityToString(sev rune) (string, error) {
 	case 'F':
 		return "fatal", nil
 	default:
-		return "", errors.New(fmt.Sprintf("unknown severity '%c'", sev))
+		return "", fmt.Errorf("unknown severity '%c'", sev)
 	}
 }
 
