@@ -274,8 +274,33 @@ func (p *LogLineParser) parseFieldAndValue() (bool, error) {
 			return false, err
 		}
 	}
+
+	if !p.validFieldName(fieldName) {
+		return false, nil
+	}
 	p.Fields[fieldName] = fieldValue
 	return false, nil
+}
+
+func (p *LogLineParser) validFieldName(fieldName string) bool {
+	if len(fieldName) == 0 {
+		return false
+	}
+	for _, c := range fieldName {
+		switch {
+		case unicode.IsLetter(c):
+			continue
+		case unicode.IsDigit(c):
+			continue
+		case c == '_':
+			continue
+		case c == '$':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func (p *LogLineParser) parseFieldValue(fieldName string) (interface{}, error) {
