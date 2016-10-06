@@ -273,10 +273,9 @@ func (p *LogLineParser) parseFieldAndValue() (bool, error) {
 		if fieldValue, err = p.parseFieldValue(fieldName); err != nil {
 			return false, err
 		}
-	}
-
-	if !p.validFieldName(fieldName) {
-		return false, nil
+		if !p.validFieldName(fieldName) {
+			return false, nil
+		}
 	}
 	p.Fields[fieldName] = fieldValue
 	return false, nil
