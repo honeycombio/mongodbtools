@@ -2,6 +2,7 @@
 
 set -u
 set -e
+set -x
 
 # this script expects two arguments: writekey and dataset.
 # the third argument, if present, is the Honeycomb URL to which to send events
@@ -123,6 +124,6 @@ EOJS
 # run everything 4 times, sleeping 15s between
 for i in {0..3} ; do
   payload=$(getStats)
-  curl -q -X POST -H "X-Honeycomb-Team: $writekey" ${url}/1/events/${dataset} -d "$payload"
+  curl -q -X POST -H "X-Honeycomb-Team: $writekey" "${url}/1/events/${dataset}" -d "$payload"
   sleep 15
 done
