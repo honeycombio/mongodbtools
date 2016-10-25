@@ -30,6 +30,8 @@ if [ $# -lt 2 ] ; then
 fi
 writekey=$1
 dataset=$2
+# replace spaces in the datase neame with %20s so curl doesn't choke
+dataset=${dataset// /%20}
 
 if [ $# -eq 3 ] ; then
   url=$3
@@ -38,6 +40,12 @@ else
 fi
 
 getStats(){
+  cuser=$1
+  csystem=$2
+  cidle=$3
+  cwait=$4
+  csteal=$5
+
   cat <<EOJS | mongo --quiet
 function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   var data = {};
@@ -120,18 +128,29 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   addGlobalLocks();
   addDatabaseLocks();
 
+  data.cpu_user = $cuser
+  data.cpu_system = $csystem
+  data.cpu_idle = $cidle
+  data.cpu_wait = $cwait
+  data.cpu_steal = $csteal
+
   print(JSON.stringify(data));
 }
 mongoCron($SLOW_QUERY_KILL_AGE,$NON_YIELDING_KILL_AGE)
 EOJS
 }
 
-# replace spaces in the datase neame with %20s so curl doesn't choke
-dataset=${dataset// /%20}
-
-# run everything 4 times, sleeping 15s between
+# run everything 4 times. collect cpu util for 15s, then get mongo stats, repeat
 for i in {0..3} ; do
-  payload=$(getStats)
+  # grab 15sec worth of CPU utilization data
+  cpu=($(vmstat 15 2 | tail -n 1 | awk '{print $13,$14,$15,$16,$17}'))
+  cpu_user=${cpu[0]}
+  cpu_system=${cpu[1]}
+  cpu_idle=${cpu[2]}
+  cpu_wait=${cpu[3]}
+  cpu_steal=${cpu[4]}
+  # grapb the mongo data, hand it CPU util to stuff into the same event
+  payload=$(getStats $cpu_user $cpu_system $cpu_idle $cpu_wait $cpu_steal)
+  # send the event to Honeycomb
   curl -q -X POST -H "X-Honeycomb-Team: $writekey" "${url}/1/events/${dataset}" -d "$payload"
-  sleep 15
 done
