@@ -24,6 +24,12 @@ FANGS="no"
 SLOW_QUERY_KILL_AGE=30
 NON_YIELDING_KILL_AGE=15
 
+CPU_USER=0
+CPU_SYSTEM=0
+CPU_IDLE=0
+CPU_WAIT=0
+CPU_STEAL=0
+
 if [ $# -lt 2 ] ; then
   echo "two arguments required: writekey and dataset"
   exit 1
@@ -50,10 +56,10 @@ getStats(){
 function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   var data = {};
 
-  function addLocks(dbname, locks) {
+  function addLocks(obj, dbname, locks) {
       function maybeAddLock(suffix, lockval) {
         if (typeof lockval != "undefined") {
-          data[dbname+suffix] = lockval+0;
+          obj[dbname+suffix] = lockval+0;
         }
       }
 
@@ -63,17 +69,17 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
       maybeAddLock("_Write_locks", locks.W);
   }
 
-  function addGlobalLocks() {
+  function addGlobalLocks(obj) {
     var globalLocks = db.serverStatus().locks.Global.acquireCount;
-    addLocks("global", globalLocks);
+    addLocks(obj, "global", globalLocks);
   }
 
-  function addDatabaseLocks() {
+  function addDatabaseLocks(obj) {
     var dbnames = db.getMongo().getDBNames();
     for (var dbi in dbnames) {
       var adb = new Mongo().getDB(dbnames[dbi]);
       var dbLocks = adb.serverStatus().locks.Database.acquireCount;
-      addLocks(dbnames[dbi], dbLocks);
+      addLocks(obj, dbnames[dbi], dbLocks);
     }
   }
 
@@ -122,11 +128,44 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
     ops.forEach(function(x) { db.killOp(x.opid); });
   }
 
+  function calcLockChange() {
+    var honeydb = new Mongo().getDB("honeycombio");
+
+    var now = new Date();
+    var newLocksData = {};
+
+    addGlobalLocks(newLocksData);
+    addDatabaseLocks(newLocksData);
+
+    // fetch the old lock data
+    var oldData = honeydb.locks.find().toArray();
+    if (oldData.length > 0) {
+      var oldLocksDoc = oldData[0];
+      var oldLocksData = oldLocksDoc.locksData;
+
+      // compute new_locks/sec for the values that are in both
+      var timeDelta = (now - oldLocksDoc.time) / 1000;
+      for (var k in newLocksData) {
+        var oldVal = oldLocksData[k] || 0;
+        data[k] = (newLocksData[k] - oldLocksData[k]) / timeDelta;
+      }
+
+      // remove old lock data
+      honeydb.locks.remove({ _id: oldLocksDoc._id });
+    }
+
+    // store the current locks along with a timestamp
+    honeydb.locks.insert({
+      time: now,
+      locksData: newLocksData
+    });
+  }
+
   data.ismaster = db.isMaster().ismaster;
   data.version = db.serverStatus().version;
   addInProgMetrics();
-  addGlobalLocks();
-  addDatabaseLocks();
+
+  calcLockChange();
 
   data.cpu_user = $cuser
   data.cpu_system = $csystem
