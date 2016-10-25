@@ -13,6 +13,11 @@ set -x
 # 30, and 45 seconds.
 #
 
+# TODO features to add
+# calculate lock percentage instead of just counts
+# add system stats (eg cpu utilization)
+
+
 # If you wish to kill queries, set FANGS="yes". When doing so, set these two
 # variables to the age (in seconds) over which queries should be killed
 FANGS="no"
@@ -120,6 +125,9 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
 mongoCron($SLOW_QUERY_KILL_AGE,$NON_YIELDING_KILL_AGE)
 EOJS
 }
+
+# replace spaces in the datase neame with %20s so curl doesn't choke
+dataset=${dataset// /%20}
 
 # run everything 4 times, sleeping 15s between
 for i in {0..3} ; do
