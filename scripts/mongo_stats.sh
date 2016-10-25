@@ -14,8 +14,7 @@ set -x
 #
 
 # TODO features to add
-# calculate lock percentage instead of just counts
-# add system stats (eg cpu utilization)
+# calculate lock percentage instead of just counts/sec
 
 
 # If you wish to kill queries, set FANGS="yes". When doing so, set these two
@@ -23,12 +22,6 @@ set -x
 FANGS="no"
 SLOW_QUERY_KILL_AGE=30
 NON_YIELDING_KILL_AGE=15
-
-CPU_USER=0
-CPU_SYSTEM=0
-CPU_IDLE=0
-CPU_WAIT=0
-CPU_STEAL=0
 
 if [ $# -lt 2 ] ; then
   echo "two arguments required: writekey and dataset"
