@@ -851,7 +851,8 @@ func (p *LogLineParser) validOperationName(s string) bool {
 		s == "insert" ||
 		s == "update" ||
 		s == "remove" ||
-		s == "command"
+		s == "command" ||
+		s == "killcursors"
 }
 
 func (p *LogLineParser) validComponentName(s string) bool {
