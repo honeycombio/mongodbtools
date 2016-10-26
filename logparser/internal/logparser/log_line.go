@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 )
@@ -176,11 +177,46 @@ func (p *LogLineParser) parseContext() error {
 	return nil
 }
 
+func (p *LogLineParser) parseSharding() error {
+	message, err := p.readUntilRune(':')
+	if err != nil {
+		return err
+	}
+
+	p.advance() // skip the ':'
+	p.eatWS()
+
+	if !strings.HasPrefix(message, "about to log metadata event into") {
+		return errors.New("unrecognized sharding log line")
+	}
+
+	p.Fields["sharding_message"] = message
+	lastSpace := strings.LastIndex(message, " ")
+	p.Fields["sharding_collection"] = message[lastSpace+1:]
+
+	var changelog interface{}
+	if changelog, err = p.parseJSONMap(); err != nil {
+		return err
+	}
+	p.Fields["sharding_changelog"] = changelog
+	return nil
+}
+
 func (p *LogLineParser) parseMessage() error {
 	p.eatWS()
 
-	// check if this message is an operation
 	savedPosition := p.position
+
+	if p.Fields["component"] == "SHARDING" {
+		savedPosition := p.position
+		err := p.parseSharding()
+		if err == nil {
+			return nil
+		}
+		p.position = savedPosition
+	}
+
+	// check if this message is an operation
 	operation, err := p.readUntil(unicode.Space)
 	if err == nil && p.validOperationName(operation) {
 		// yay, an operation.
