@@ -32,7 +32,15 @@ dataset=$2
 # replace spaces in the datase neame with %20s so curl doesn't choke
 dataset=${dataset// /%20}
 
+# host:port for the mongo instance; defaults to localhost:27017
 if [ $# -eq 3 ] ; then
+  mongo_host=$3
+else
+  mongo_host="localhost:27017"
+fi
+
+# honeycomb url is the fourth argument, if present
+if [ $# -eq 4 ] ; then
   url=$3
 else
   url="https://api.honeycomb.io"
@@ -45,7 +53,7 @@ getStats(){
   cwait=$4
   csteal=$5
 
-  cat <<EOJS | mongo --quiet
+  cat <<EOJS | mongo --quiet $mongo_host
 function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   var data = {};
 
@@ -122,7 +130,19 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   }
 
   function calcLockChange() {
-    var honeydb = new Mongo().getDB("honeycombio");
+    function getHoneycombDB() {
+      var status = rs.status();
+      var mongo;
+      if (!status.ok) {
+        mongo = db.getMongo();
+      } else {
+        mongo = new Mongo(status.set + "/" + status.members.map(function(m) { return m.name; }).join(","));
+      }
+      return mongo.getDB("honeycomb");
+    }
+    var honeydb = getHoneycombDB();
+    myname = db.serverStatus().repl ? db.serverStatus().repl.me : db.getMongo().host
+    data.hostname = myname;
 
     var now = new Date();
     var newLocksData = {};
@@ -131,7 +151,7 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
     addDatabaseLocks(newLocksData);
 
     // fetch the old lock data
-    var oldData = honeydb.locks.find().toArray();
+    var oldData = honeydb.locks.find({host:myname}).toArray();
     if (oldData.length > 0) {
       var oldLocksDoc = oldData[0];
       var oldLocksData = oldLocksDoc.locksData;
@@ -150,15 +170,19 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
     // store the current locks along with a timestamp
     honeydb.locks.insert({
       time: now,
+      host: myname,
       locksData: newLocksData
     });
   }
 
+  db.getMongo().setSlaveOk();
+
   data.ismaster = db.isMaster().ismaster;
   data.version = db.serverStatus().version;
-  addInProgMetrics();
+  try { addInProgMetrics(); } catch (e) { print ("addInProgMetrics"); }
 
-  calcLockChange();
+  try { calcLockChange(); } catch (e) { print ("calcLockChange"); }
+
 
   data.cpu_user = $cuser
   data.cpu_system = $csystem
