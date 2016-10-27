@@ -2,7 +2,6 @@
 
 set -u
 set -e
-set -x
 
 # this script expects two arguments: writekey and dataset.
 # the third argument, if present, is the Honeycomb URL to which to send events
@@ -29,7 +28,7 @@ if [ $# -lt 2 ] ; then
 fi
 writekey=$1
 dataset=$2
-# replace spaces in the datase neame with %20s so curl doesn't choke
+# replace spaces in the datase neame with %20s so curl works
 dataset=${dataset// /%20}
 
 # host:port for the mongo instance; defaults to localhost:27017
@@ -55,6 +54,7 @@ getStats(){
 
   cat <<EOJS | mongo --quiet $mongo_host
 function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
+
   var data = {};
 
   function addLocks(obj, dbname, locks) {
@@ -97,7 +97,7 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
     data.slow_queries_running = slowQueries.length;
 
     if ("$FANGS" == "yes") {
-      killOps(nonYieldOps);
+      killOps(nonYieldingOps);
       killOps(slowQueries);
     }
   }
@@ -129,17 +129,18 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
     ops.forEach(function(x) { db.killOp(x.opid); });
   }
 
-  function calcLockChange() {
-    function getHoneycombDB() {
-      var status = rs.status();
-      var mongo;
-      if (!status.ok) {
-        mongo = db.getMongo();
-      } else {
-        mongo = new Mongo(status.set + "/" + status.members.map(function(m) { return m.name; }).join(","));
-      }
-      return mongo.getDB("honeycomb");
+  function getHoneycombDB() {
+    var status = rs.status();
+    var mongo;
+    if (!status.ok) {
+      mongo = db.getMongo();
+    } else {
+      mongo = new Mongo(status.set + "/" + status.members.map(function(m) { return m.name; }).join(","));
     }
+    return mongo.getDB("honeycomb");
+  }
+
+  function calcLockChange() {
     var honeydb = getHoneycombDB();
     myname = db.serverStatus().repl ? db.serverStatus().repl.me : db.getMongo().host
     data.hostname = myname;
@@ -179,10 +180,9 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
 
   data.ismaster = db.isMaster().ismaster;
   data.version = db.serverStatus().version;
-  try { addInProgMetrics(); } catch (e) { print ("addInProgMetrics"); }
 
-  try { calcLockChange(); } catch (e) { print ("calcLockChange"); }
-
+  addInProgMetrics()
+  calcLockChange()
 
   data.cpu_user = $cuser
   data.cpu_system = $csystem
@@ -206,7 +206,7 @@ for i in {0..3} ; do
   cpu_wait=${cpu[3]}
   cpu_steal=${cpu[4]}
   # grapb the mongo data, hand it CPU util to stuff into the same event
-  payload=$(getStats $cpu_user $cpu_system $cpu_idle $cpu_wait $cpu_steal)
+  payload=$(getStats $cpu_user $cpu_system $cpu_idle $cpu_wait $cpu_steal | tail -n 1)
   # send the event to Honeycomb
   curl -q -X POST -H "X-Honeycomb-Team: $writekey" "${url}/1/events/${dataset}" -d "$payload"
 done
