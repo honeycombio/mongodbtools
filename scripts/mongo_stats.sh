@@ -161,7 +161,9 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
       var timeDelta = (now - oldLocksDoc.time) / 1000;
       for (var k in newLocksData) {
         var oldVal = oldLocksData[k] || 0;
-        data[k] = (newLocksData[k] - oldLocksData[k]) / timeDelta;
+        var lockDiff = (newLocksData[k] - oldLocksData[k]) / timeDelta;
+        // skip negative locks from server restart
+        data[k] = lockDiff > 0 ? lockDiff : 0;
       }
 
       // remove old lock data
