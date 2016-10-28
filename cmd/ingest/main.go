@@ -60,7 +60,7 @@ func main() {
 		}
 
 		if *timings && logparserSuccess > 0 && logparserSuccess%50000 == 0 {
-			fmt.Printf("%dms for %d successfully parsed log lines (%d lines/sec).  %d failures\n", logparserTime.Nanoseconds()/1e6, logparserSuccess, int64(float64(logparserSuccess)/logparserTime.Seconds()), logparserFailure)
+			fmt.Printf("%dms for %d successfully parsed log lines (%d lines/sec).  %d failures (%.2f%%)\n", logparserTime.Nanoseconds()/1e6, logparserSuccess, int64(float64(logparserSuccess)/logparserTime.Seconds()), logparserFailure, 100.0*float64(logparserFailure)/float64(logparserFailure+logparserSuccess))
 		}
 	}
 
