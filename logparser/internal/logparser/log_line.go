@@ -589,7 +589,7 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 		// that occurs after an even number of quotes.
 
 		savedPosition := p.position + 1
-		endPosition := p.position + 2
+		endPosition := savedPosition
 
 		quoteCount := 1
 		quotePosition := savedPosition - 1
