@@ -595,18 +595,25 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 		quotePosition := savedPosition - 1
 
 		if endPosition < len(p.runes)-1 {
+			lastRune := '"'
+
 			for {
 				r := p.runes[endPosition]
 				if r == '"' {
 					quoteCount++
 					quotePosition = endPosition
-				} else if r == ',' || r == '}' || r == ']' {
+				} else if (r == ',' || r == '}' || r == ']') && lastRune == '"' {
 					if quoteCount%2 == 0 {
 						value = string(p.runes[savedPosition:quotePosition])
 						p.position = quotePosition + 1
 						break
 					}
 				}
+
+				if !unicode.IsSpace(r) {
+					lastRune = r
+				}
+
 				endPosition++
 				if endPosition == len(p.runes) {
 					return nil, errors.New("unexpected end of line reading json value")
