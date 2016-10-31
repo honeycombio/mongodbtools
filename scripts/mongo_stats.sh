@@ -64,10 +64,10 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
         }
       }
 
-      maybeAddLock("_read_locks", locks.r);
-      maybeAddLock("_Read_locks", locks.R);
-      maybeAddLock("_write_locks", locks.w);
-      maybeAddLock("_Write_locks", locks.W);
+      maybeAddLock("_read_locks_per_sec", locks.r);
+      maybeAddLock("_Read_locks_per_sec", locks.R);
+      maybeAddLock("_write_locks_per_sec", locks.w);
+      maybeAddLock("_Write_locks_per_sec", locks.W);
   }
 
   function addGlobalLocks(obj) {
