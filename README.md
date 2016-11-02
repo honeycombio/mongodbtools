@@ -6,7 +6,9 @@ Two packages.  One for ingesting mongodb logs (logparser) and the other for quer
 
 ## Stats script
 
-scripts/mongo_stats.sh is a shell script that collects some statistics from the server and the mongo instance and submits them to Honeycomb. It is a template for you use in creating your own stats scripts - it might work for you as is but likely needs modification to fit your environment (for example, credentials to talk to Mongo).
+scripts/mongo_stats.sh is a shell script that collects some statistics from the server and the mongo instance and submits them to Honeycomb. It is a template for you use in creating your own stats scripts - it might work for you as is but likely needs modification to fit your environment. It has been tested against MongoDB 3.2.
+
+Though it is technically a shell script, the majority of the logic in the script is javascript interpreted by the mongo client. The javascript functions parse server information and collect information about locks and other server statistics, then return it as a JSON object. That JSON object is the payload that is sent to Honeycomb.
 
 It is intended to be run from cron every minute - internally it runs 4 times, submitting statistics every 15 seconds.
 

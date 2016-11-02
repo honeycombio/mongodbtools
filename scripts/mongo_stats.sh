@@ -3,7 +3,12 @@
 set -u
 set -e
 
-# this script expects two arguments: writekey and dataset.
+# this script is a template - you will probably need to modify it to suit your
+# environment. It has been tested to work against a Mongo 3.2 server running on
+# Ubuntu linux.
+
+# this script expects two arguments: a Honeycomb writekey and dataset name.
+# the third argument, if present, is the mongo server to talk to
 # the third argument, if present, is the Honeycomb URL to which to send events
 
 # this script will collect locks and a few other metrics from a locally running
@@ -23,7 +28,13 @@ SLOW_QUERY_KILL_AGE=30
 NON_YIELDING_KILL_AGE=15
 
 if [ $# -lt 2 ] ; then
-  echo "two arguments required: writekey and dataset"
+  echo "Usage: $0 <writekey> <dataset> [host:port]"
+  echo ""
+  echo "$0 collects stats from a MongoDB instance and reports them to Honeycomb."
+  echo "    It expects a Honeycomb writekey and dataset name."
+  echo "    The optional third argument is a mongo target (default localhost:27017)."
+  echo "    https://honeycomb.io"
+  echo ""
   exit 1
 fi
 writekey=$1
@@ -207,7 +218,7 @@ for i in {0..3} ; do
   cpu_idle=${cpu[2]}
   cpu_wait=${cpu[3]}
   cpu_steal=${cpu[4]}
-  # grapb the mongo data, hand it CPU util to stuff into the same event
+  # grab the mongo data, hand it CPU util to stuff into the same event
   payload=$(getStats $cpu_user $cpu_system $cpu_idle $cpu_wait $cpu_steal | tail -n 1)
   # send the event to Honeycomb
   curl -q -X POST -H "X-Honeycomb-Team: $writekey" "${url}/1/events/${dataset}" -d "$payload"
