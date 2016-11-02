@@ -4,6 +4,12 @@
 
 Two packages.  One for ingesting mongodb logs (logparser) and the other for query normalization (queryshape).
 
+## Stats script
+
+scripts/mongo_stats.sh is a shell script that collects some statistics from the server and the mongo instance and submits them to Honeycomb. It is a template for you use in creating your own stats scripts - it might work for you as is but likely needs modification to fit your environment (for example, credentials to talk to Mongo).
+
+It is intended to be run from cron every minute - internally it runs 4 times, submitting statistics every 15 seconds.
+
 ## Thanks
 
 The logparser package is spiritually derived from Travis Cline's PEG
