@@ -153,7 +153,7 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
 
   function calcLockChange() {
     var honeydb = getHoneycombDB();
-    myname = db.serverStatus().repl ? db.serverStatus().repl.me : db.getMongo().host
+    var myname = db.serverStatus().repl ? db.serverStatus().repl.me : db.getMongo().host;
     data.hostname = myname;
 
     var now = new Date();
@@ -189,6 +189,27 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
     });
   }
 
+  // Capture as much as possible from https://docs.mongodb.com/v3.2/reference/command/serverStatus/#repl
+  func addReplSetAttrs() {
+    var repl = db.serverStatus().repl;
+    if (!repl) {
+      return;
+    }
+
+    if (repl.setName) {
+      data.replica_set_name = repl.setName;
+    }
+    if (repl.setVersion) {
+      data.replica_set_version = repl.setVersion;
+    }
+    if (repl.primary) {
+      data.replica_set_primary = repl.primary;
+    }
+    if (repl.electionId) {
+      data.replica_set_election_id = repl.electionId.valueOf();
+    }
+  }
+
   db.getMongo().setSlaveOk();
 
   data.ismaster = db.isMaster().ismaster;
@@ -196,6 +217,7 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
 
   addInProgMetrics()
   calcLockChange()
+  addReplSetAttrs()
 
   data.cpu_user = $cuser
   data.cpu_system = $csystem
