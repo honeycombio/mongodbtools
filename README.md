@@ -1,8 +1,12 @@
 # mongodbtools
 
+Tools for sending MongoDB logs to [Honeycomb](https://honeycomb.io/).
+
 ## Summary
 
 Two packages.  One for ingesting mongodb logs (logparser) and the other for query normalization (queryshape).
+
+See [our docs](https://honeycomb.io/docs) for more about Honeycomb, and our [MongoDB-specific docs](https://honeycomb.io/docs/connect/mongodb/).
 
 ## Stats script
 
