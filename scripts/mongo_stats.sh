@@ -51,7 +51,7 @@ fi
 
 # honeycomb url is the fourth argument, if present
 if [ $# -eq 4 ] ; then
-  url=$3
+  url=$4
 else
   url="https://api.honeycomb.io"
 fi
