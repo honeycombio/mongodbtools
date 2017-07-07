@@ -692,6 +692,20 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 		} else {
 			return nil, fmt.Errorf("unexpected start of JSON value: %s", value)
 		}
+	case firstCharInVal == '/':
+		// Case for regex query field value
+		// for example: { field: /^numbersOrLetters.?.?$/ }
+		var exp string
+		if err := p.expect('/'); err != nil {
+			return nil, err
+		}
+		if exp, err = p.readUntilRune('/'); err != nil {
+			return nil, err
+		}
+		if err = p.expect('/'); err != nil {
+			return nil, err
+		}
+		value = "/" + exp + "/"
 	default:
 		return nil, fmt.Errorf("unexpected start character for JSON value of field: %c", firstCharInVal)
 	}
