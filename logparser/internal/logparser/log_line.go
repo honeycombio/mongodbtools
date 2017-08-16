@@ -1,6 +1,7 @@
 package logparser
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -692,6 +693,36 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 		} else {
 			return nil, fmt.Errorf("unexpected start of JSON value: %s", value)
 		}
+	case firstCharInVal == '/':
+		// Case for regex query field value
+		// for example: { field: /^numbersOrLetters.?.?$/ }
+		var exp string
+		if err := p.expect('/'); err != nil {
+			return nil, err
+		}
+		if exp, err = p.readUntilRune('/'); err != nil {
+			return nil, err
+		}
+
+		var moreExp string
+		var expression bytes.Buffer
+		expression.WriteString(exp)
+		// The '/' can be escaped, so keep looking for unescaped end of expression
+		for {
+			if p.lookahead(-1) != '\\' {
+				break
+			}
+			p.position++
+			if moreExp, err = p.readUntilRune('/'); err != nil {
+				return nil, err
+			}
+			expression.WriteString("/")
+			expression.WriteString(moreExp)
+		}
+		if err = p.expect('/'); err != nil {
+			return nil, err
+		}
+		value = "/" + expression.String() + "/"
 	default:
 		return nil, fmt.Errorf("unexpected start character for JSON value of field: %c", firstCharInVal)
 	}
