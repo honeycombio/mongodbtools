@@ -659,9 +659,11 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 		} else if value == "Timestamp" {
 			var ts string
 			if p.lookahead(0) == '(' {
+				p.position++
 				if ts, err = p.readUntilRune(')'); err != nil {
 					return nil, err
 				}
+				p.position++
 			} else {
 				if ts, err = p.eatWS().readWhile([]interface{}{unicode.Digit, '|'}); err != nil {
 					return nil, err
@@ -680,7 +682,7 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 
 			hexRunes := []interface{}{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f'}
 			var hex string
-			if hex, err = p.readWhile(hexRunes); err != nil {
+			if hex, err = p.eatWS().readWhile(hexRunes); err != nil {
 				return nil, err
 			}
 			if err = p.expect(quote); err != nil {
@@ -690,6 +692,25 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 				return nil, err
 			}
 			value = "ObjectId(" + hex + ")"
+		} else if value == "BinData" {
+			// BinData looks something like this:
+			// BinData(0, D296E984640196C4D2977BECF468865948F7704C)
+			// It's not very interesting, but we need to handle it
+			if err = p.expect('('); err != nil {
+				return nil, err
+			}
+
+			var bindata string
+			if bindata, err = p.readUntilRune(')'); err != nil {
+				return nil, err
+			}
+
+			if err = p.expect(')'); err != nil {
+				return nil, err
+			}
+
+			value = "BinData(" + bindata + ")"
+
 		} else {
 			return nil, fmt.Errorf("unexpected start of JSON value: %s", value)
 		}
