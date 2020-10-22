@@ -710,7 +710,24 @@ func (p *LogLineParser) parseJSONValue() (interface{}, error) {
 			}
 
 			value = "BinData(" + bindata + ")"
+		} else if value == "UUID" {
+			// UUID looks something like this:
+			// UUID("bac26ad1-3d76-4da1-94cc-d541942f6889")
+			// It's not very interesting, but we need to handle it
+			if err = p.expect('('); err != nil {
+				return nil, err
+			}
 
+			var uuid string
+			if uuid, err = p.readUntilRune(')'); err != nil {
+				return nil, err
+			}
+
+			if err = p.expect(')'); err != nil {
+				return nil, err
+			}
+
+			value = "UUID(" + uuid + ")"
 		} else {
 			return nil, fmt.Errorf("unexpected start of JSON value: %s", value)
 		}
