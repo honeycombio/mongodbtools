@@ -152,6 +152,12 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   }
 
   function calcLockChange() {
+    var serverStatus = db.serverStatus();
+    if (serverStatus.version.startsWith("2")) {
+        // Crude version check: serverStatus().locks.*.acquireCount doesn't
+        // exist in mongodb before version 3.0
+        return;
+    }
     var honeydb = getHoneycombDB();
     var myname = db.serverStatus().repl ? db.serverStatus().repl.me : db.getMongo().host;
     data.hostname = myname;
