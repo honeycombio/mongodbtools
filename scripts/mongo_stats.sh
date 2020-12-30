@@ -51,7 +51,7 @@ fi
 
 # honeycomb url is the fourth argument, if present
 if [ $# -eq 4 ] ; then
-  url=$3
+  url=$4
 else
   url="https://api.honeycomb.io"
 fi
@@ -190,7 +190,7 @@ function mongoCron(slowQueryKillAge, nonYieldingKillAge) {
   }
 
   // Capture as much as possible from https://docs.mongodb.com/v3.2/reference/command/serverStatus/#repl
-  func addReplSetAttrs() {
+  function addReplSetAttrs() {
     var repl = db.serverStatus().repl;
     if (!repl) {
       return;
