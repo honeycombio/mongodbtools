@@ -1,6 +1,6 @@
 # mongodbtools
 
-[![OSS Lifecycle](https://img.shields.io/osslifecycle/honeycombio/REPO)](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md)
+[![OSS Lifecycle](https://img.shields.io/osslifecycle/honeycombio/mongodbtools)](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md)
 
 Tools for sending MongoDB logs to [Honeycomb](https://honeycomb.io/).
 
