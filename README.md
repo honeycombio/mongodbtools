@@ -1,6 +1,8 @@
 # mongodbtools
 
-[![OSS Lifecycle](https://img.shields.io/osslifecycle/honeycombio/mongodbtools?color=success)](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md)
+[![OSS Lifecycle](https://img.shields.io/osslifecycle/honeycombio/mongodbtools?color=pink)](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md)
+
+**STATUS: this project is being sunset: See https://github.com/honeycombio/mongodbtools/issues/20**
 
 Tools for sending MongoDB logs to [Honeycomb](https://honeycomb.io/).
 
