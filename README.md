@@ -2,7 +2,7 @@
 
 [![OSS Lifecycle](https://img.shields.io/osslifecycle/honeycombio/mongodbtools)](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md)
 
-**STATUS: this project is [archived](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md).
+**STATUS: this project is [archived](https://github.com/honeycombio/home/blob/main/honeycomb-oss-lifecycle-and-practices.md).**
 
 We recommend using [honeytail](https://github.com/honeycombio/honeytail) to move MongoDB logs into Honeycomb.
 
